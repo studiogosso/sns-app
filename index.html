@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>プロジェクトSNS v2.0</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0a14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+--bg:#0a0a14;--bg2:rgba(16,16,36,.65);--bg3:rgba(24,24,52,.6);--bg4:rgba(40,40,80,.5);
+--accent:#0984e3;--accent2:#74b9ff;--text:#e8e8f0;--text2:#7878a0;
+--border:rgba(60,60,120,.35);--danger:#e74c3c;--success:#00b894;--warn:#fdcb6e;
+--pink:#fd79a8;--orange:#e17055;--purple:#a29bfe;--green:#00cec9;
+--glass:rgba(16,16,40,.55);--glass-border:rgba(80,80,160,.2);
+--radius:18px;--radius-sm:12px;
+--shadow:0 4px 24px rgba(0,0,0,.3), 0 1px 4px rgba(0,0,0,.2);
+}
+html{font-size:15px;scroll-behavior:smooth}
+body{
+background:var(--bg);color:var(--text);font-family:'Segoe UI','Hiragino Sans','Noto Sans JP',sans-serif;
+min-height:100dvh;overflow-x:hidden;
+background-image:
+  radial-gradient(ellipse 80% 60% at 20% 10%, rgba(9,132,227,.06) 0%, transparent 70%),
+  radial-gradient(ellipse 60% 50% at 80% 90%, rgba(108,92,231,.05) 0%, transparent 70%);
+}
+a{color:var(--accent2);text-decoration:none}
+a:hover{text-decoration:underline}
+button{cursor:pointer;border:none;background:none;color:var(--text);font-family:inherit;font-size:inherit}
+input,textarea,select{
+background:var(--bg3);color:var(--text);border:1px solid var(--glass-border);
+border-radius:var(--radius-sm);padding:10px 14px;font-family:inherit;font-size:.95rem;
+outline:none;width:100%;transition:border-color .2s, box-shadow .2s;
+backdrop-filter:blur(8px);
+}
+input:focus,textarea:focus,select:focus{
+border-color:var(--accent);box-shadow:0 0 0 3px rgba(9,132,227,.15);
+}
+textarea{resize:vertical;min-height:80px}
+
+/* Layout */
+.app{max-width:640px;margin:0 auto;padding-bottom:85px}
+
+/* Header */
+.header{
+position:sticky;top:0;z-index:100;
+background:rgba(10,10,20,.82);backdrop-filter:blur(20px) saturate(1.4);
+border-bottom:1px solid var(--glass-border);padding:10px 16px;
+display:flex;align-items:center;justify-content:space-between;
+}
+.header h1{font-size:1.1rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.header h1 .logo{
+width:34px;height:34px;border-radius:12px;
+background:linear-gradient(135deg,var(--accent),var(--purple));
+display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;
+box-shadow:0 2px 12px rgba(9,132,227,.3);
+}
+.header-actions{display:flex;gap:4px}
+.header-actions button{
+width:36px;height:36px;border-radius:10px;background:var(--bg3);
+display:flex;align-items:center;justify-content:center;font-size:1rem;
+position:relative;transition:all .2s;backdrop-filter:blur(8px);
+border:1px solid transparent;
+}
+.header-actions button:hover{background:var(--bg4);border-color:var(--glass-border)}
+.notif-badge{
+position:absolute;top:-2px;right:-2px;background:var(--danger);color:#fff;
+font-size:.6rem;font-weight:700;min-width:16px;height:16px;border-radius:8px;
+display:flex;align-items:center;justify-content:center;padding:0 4px;
+box-shadow:0 2px 6px rgba(231,76,60,.4);
+}
+.notif-badge.hidden{display:none}
+
+/* Channels */
+.channels{
+display:flex;gap:6px;padding:10px 16px;overflow-x:auto;
+scrollbar-width:none;-webkit-overflow-scrolling:touch;
+}
+.channels::-webkit-scrollbar{display:none}
+.ch-btn{
+white-space:nowrap;padding:7px 16px;border-radius:20px;
+background:var(--glass);font-size:.8rem;font-weight:600;
+transition:all .25s;flex-shrink:0;
+border:1px solid var(--glass-border);
+backdrop-filter:blur(8px);
+}
+.ch-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 2px 12px rgba(9,132,227,.3)}
+.ch-btn:hover:not(.active){background:var(--bg4);border-color:rgba(80,80,160,.3)}
+
+/* Search */
+.search-bar{
+padding:0 16px 10px;display:none;
+}
+.search-bar.open{display:block;animation:slideDown .2s ease}
+.search-bar input{
+background:var(--glass);border:1px solid var(--glass-border);border-radius:24px;
+padding:10px 18px 10px 40px;backdrop-filter:blur(12px);
+background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%237878a0' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85zm-5.242.156a5 5 0 1 1 0-10 5 5 0 0 1 0 10z'/%3E%3C/svg%3E");
+background-repeat:no-repeat;background-position:14px center;
+}
+
+/* Compose */
+.compose{
+background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius);
+margin:12px 16px;padding:14px;
+backdrop-filter:blur(16px);box-shadow:var(--shadow);
+transition:border-color .2s;
+}
+.compose:focus-within{border-color:rgba(9,132,227,.3)}
+.compose-top{display:flex;gap:10px;align-items:flex-start}
+.compose-avatar{
+width:40px;height:40px;border-radius:12px;
+background:linear-gradient(135deg,var(--accent),var(--purple));
+display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;
+box-shadow:0 2px 8px rgba(9,132,227,.25);
+}
+.compose-input{flex:1}
+.compose-input textarea{
+background:transparent;border:none;padding:6px 0;min-height:60px;
+font-size:.95rem;line-height:1.5;
+}
+.compose-input textarea:focus{box-shadow:none}
+.compose-input textarea::placeholder{color:var(--text2)}
+.compose-meta{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.compose-meta select,.compose-meta input{
+flex:1;min-width:120px;border-radius:20px;padding:7px 14px;font-size:.82rem;
+background:var(--bg3);border:1px solid var(--glass-border);
+}
+.char-count{font-size:.7rem;color:var(--text2);text-align:right;margin-top:4px;transition:color .2s}
+.char-count.warn{color:var(--warn)}
+.char-count.over{color:var(--danger)}
+.compose-actions{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--glass-border)}
+.compose-type{display:flex;gap:6px}
+.compose-type button{
+padding:5px 12px;border-radius:14px;font-size:.75rem;font-weight:600;
+background:var(--bg3);transition:all .2s;border:1px solid transparent;
+}
+.compose-type button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.compose-type button:hover:not(.active){border-color:var(--glass-border)}
+.btn-post{
+padding:8px 24px;border-radius:20px;
+background:linear-gradient(135deg,var(--accent),#0770c2);
+color:#fff;font-weight:700;font-size:.85rem;transition:all .2s;
+box-shadow:0 2px 12px rgba(9,132,227,.3);
+}
+.btn-post:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(9,132,227,.4)}
+.btn-post:active{transform:translateY(0)}
+
+/* Posts */
+.feed{padding:0 16px}
+.post{
+background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius);
+padding:14px;margin-bottom:12px;transition:all .25s;
+backdrop-filter:blur(12px);box-shadow:0 2px 12px rgba(0,0,0,.15);
+}
+.post:hover{border-color:rgba(80,80,160,.35);box-shadow:0 4px 20px rgba(0,0,0,.2)}
+.post.pinned{border-color:rgba(253,203,110,.35)}
+.pin-label{font-size:.72rem;color:var(--warn);margin-bottom:6px;display:flex;align-items:center;gap:4px}
+.post-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.post-avatar{
+width:40px;height:40px;border-radius:12px;display:flex;
+align-items:center;justify-content:center;font-size:.72rem;font-weight:700;
+color:#fff;flex-shrink:0;letter-spacing:.5px;
+box-shadow:0 2px 8px rgba(0,0,0,.2);
+}
+.post-meta{flex:1;min-width:0}
+.post-project{font-weight:700;font-size:.88rem;display:flex;align-items:center;gap:6px}
+.post-project .badge{
+font-size:.62rem;padding:2px 8px;border-radius:10px;font-weight:600;
+}
+.post-time{font-size:.73rem;color:var(--text2);margin-top:2px}
+.post-menu-wrap{position:relative}
+.post-menu-btn{
+width:30px;height:30px;border-radius:8px;
+display:flex;align-items:center;justify-content:center;font-size:1rem;
+transition:background .2s;
+}
+.post-menu-btn:hover{background:var(--bg4)}
+.post-menu{
+display:none;position:absolute;right:0;top:34px;z-index:10;
+background:rgba(20,20,44,.95);backdrop-filter:blur(16px);
+border:1px solid var(--glass-border);border-radius:var(--radius-sm);
+padding:4px;min-width:140px;box-shadow:var(--shadow);
+}
+.post-menu.open{display:block;animation:fadeIn .15s ease}
+.post-menu button{
+display:flex;align-items:center;gap:8px;width:100%;
+padding:8px 12px;border-radius:8px;font-size:.82rem;
+transition:background .15s;text-align:left;
+}
+.post-menu button:hover{background:var(--bg4)}
+.post-menu .danger{color:var(--danger)}
+.post-body{
+font-size:.92rem;line-height:1.65;margin-bottom:10px;
+word-break:break-word;white-space:pre-wrap;
+}
+.post-body a{color:var(--accent2)}
+.post-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.post-tags span{
+font-size:.72rem;color:var(--accent2);background:rgba(9,132,227,.1);
+padding:3px 10px;border-radius:12px;border:1px solid rgba(9,132,227,.15);
+}
+.post-actions{display:flex;gap:4px;margin-top:4px}
+.post-actions button{
+display:flex;align-items:center;gap:5px;padding:6px 12px;
+border-radius:12px;font-size:.78rem;color:var(--text2);transition:all .2s;
+}
+.post-actions button:hover{background:var(--bg4);color:var(--text)}
+.post-actions button.liked{color:var(--pink)}
+.post-actions button.pinned-btn{color:var(--warn)}
+.post-type-milestone .post-body{
+border-left:3px solid var(--success);padding-left:12px;
+}
+.post-type-link .link-card{
+background:var(--bg3);border-radius:var(--radius-sm);padding:10px 14px;
+margin-top:6px;border:1px solid var(--glass-border);transition:border-color .2s;
+}
+.post-type-link .link-card:hover{border-color:var(--accent)}
+.post-type-link .link-card .link-url{
+font-size:.75rem;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.post-type-rss .rss-source{font-size:.72rem;color:var(--orange);margin-top:4px}
+
+/* Edit mode */
+.post-edit textarea{
+background:var(--bg3);border:1px solid var(--glass-border);
+border-radius:var(--radius-sm);padding:10px;font-size:.9rem;
+min-height:80px;margin-bottom:8px;width:100%;
+}
+.post-edit-actions{display:flex;gap:8px;justify-content:flex-end}
+.post-edit-actions button{
+padding:6px 16px;border-radius:12px;font-size:.82rem;font-weight:600;
+}
+.post-edit-actions .save{background:var(--accent);color:#fff}
+.post-edit-actions .cancel{background:var(--bg4)}
+
+/* Digest */
+.digest-panel{
+display:none;background:var(--glass);border:1px solid var(--glass-border);
+border-radius:var(--radius);margin:12px 16px;padding:16px;
+backdrop-filter:blur(16px);box-shadow:var(--shadow);
+}
+.digest-panel.open{display:block;animation:slideDown .3s ease}
+.digest-panel h3{font-size:1rem;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.digest-content{font-size:.88rem;line-height:1.7;color:var(--text2)}
+.digest-content strong{color:var(--text)}
+.digest-actions{display:flex;gap:8px;margin-top:12px}
+.digest-actions button{
+padding:7px 16px;border-radius:16px;font-size:.8rem;font-weight:600;
+background:var(--bg3);transition:all .2s;border:1px solid transparent;
+}
+.digest-actions button:hover{background:var(--bg4);border-color:var(--glass-border)}
+.digest-actions button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* Stats */
+.stats-panel{
+display:none;background:var(--glass);border:1px solid var(--glass-border);
+border-radius:var(--radius);margin:12px 16px;padding:16px;
+backdrop-filter:blur(16px);box-shadow:var(--shadow);
+}
+.stats-panel.open{display:block;animation:slideDown .3s ease}
+.stats-panel h3{font-size:1rem;margin-bottom:14px}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.stat-card{
+background:var(--bg3);border-radius:var(--radius-sm);padding:14px 12px;
+text-align:center;border:1px solid var(--glass-border);
+}
+.stat-card .stat-num{font-size:1.4rem;font-weight:700;color:var(--accent2)}
+.stat-card .stat-lbl{font-size:.7rem;color:var(--text2);margin-top:4px}
+.stats-bars{margin-bottom:16px}
+.stat-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.stat-label{font-size:.8rem;width:110px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat-bar{flex:1;height:8px;background:rgba(10,10,20,.5);border-radius:4px;overflow:hidden}
+.stat-bar-fill{height:100%;border-radius:4px;transition:width .5s}
+.stat-count{font-size:.75rem;color:var(--text2);width:30px;text-align:right}
+.heatmap-title{font-size:.85rem;color:var(--text2);margin-bottom:8px}
+.heatmap-wrap{overflow-x:auto;padding-bottom:8px}
+#heatmap{border-radius:6px}
+
+/* RSS Panel */
+.rss-panel{
+display:none;background:var(--glass);border:1px solid var(--glass-border);
+border-radius:var(--radius);margin:12px 16px;padding:16px;
+backdrop-filter:blur(16px);box-shadow:var(--shadow);
+}
+.rss-panel.open{display:block;animation:slideDown .3s ease}
+.rss-panel h3{font-size:1rem;margin-bottom:12px}
+.rss-add{display:flex;gap:8px;margin-bottom:12px}
+.rss-add input{flex:1;border-radius:20px}
+.rss-add button{
+padding:8px 18px;border-radius:20px;
+background:linear-gradient(135deg,var(--accent),#0770c2);
+color:#fff;font-weight:600;font-size:.85rem;white-space:nowrap;
+box-shadow:0 2px 8px rgba(9,132,227,.25);
+}
+.rss-list{font-size:.85rem}
+.rss-item{
+display:flex;align-items:center;justify-content:space-between;gap:8px;
+padding:8px 0;border-bottom:1px solid var(--glass-border);
+}
+.rss-item:last-child{border-bottom:none}
+.rss-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.rss-item button{color:var(--danger);font-size:.8rem;flex-shrink:0}
+
+/* Git Panel */
+.git-panel{
+display:none;background:var(--glass);border:1px solid var(--glass-border);
+border-radius:var(--radius);margin:12px 16px;padding:16px;
+backdrop-filter:blur(16px);box-shadow:var(--shadow);
+}
+.git-panel.open{display:block;animation:slideDown .3s ease}
+.git-panel h3{font-size:1rem;margin-bottom:12px}
+.git-panel textarea{margin-bottom:10px;min-height:120px;font-family:'Cascadia Code','Fira Code',monospace;font-size:.82rem}
+.git-actions{display:flex;gap:8px}
+.git-actions button{
+padding:8px 18px;border-radius:16px;font-size:.82rem;font-weight:600;
+background:var(--bg3);transition:all .2s;border:1px solid var(--glass-border);
+}
+.git-actions button:hover{background:var(--bg4)}
+.git-actions button.primary{
+background:linear-gradient(135deg,var(--accent),#0770c2);color:#fff;border-color:var(--accent);
+box-shadow:0 2px 8px rgba(9,132,227,.25);
+}
+
+/* Bottom Nav */
+.bottom-nav{
+position:fixed;bottom:0;left:0;right:0;z-index:100;
+background:rgba(10,10,20,.85);backdrop-filter:blur(20px) saturate(1.4);
+border-top:1px solid var(--glass-border);
+}
+.bottom-nav-inner{
+display:flex;max-width:640px;width:100%;margin:0 auto;
+}
+.nav-btn{
+flex:1;display:flex;flex-direction:column;align-items:center;
+gap:3px;padding:10px 0 12px;font-size:.68rem;color:var(--text2);transition:all .2s;
+position:relative;
+}
+.nav-btn.active{color:var(--accent)}
+.nav-btn.active::before{
+content:'';position:absolute;top:0;left:25%;right:25%;height:2px;
+background:var(--accent);border-radius:0 0 2px 2px;
+}
+.nav-btn .nav-icon{font-size:1.15rem}
+
+/* Toast */
+.toast-container{
+position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:300;
+display:flex;flex-direction:column;gap:8px;pointer-events:none;
+max-width:90%;width:400px;
+}
+.toast{
+background:rgba(20,20,44,.92);backdrop-filter:blur(16px);
+border:1px solid var(--glass-border);border-radius:var(--radius-sm);
+padding:12px 18px;color:var(--text);font-size:.85rem;
+box-shadow:var(--shadow);animation:toastIn .3s ease;
+display:flex;align-items:center;gap:10px;
+}
+.toast.success{border-left:3px solid var(--success)}
+.toast.error{border-left:3px solid var(--danger)}
+.toast.info{border-left:3px solid var(--accent)}
+.toast.out{animation:toastOut .3s ease forwards}
+
+/* Empty state */
+.empty-state{
+text-align:center;padding:60px 20px;color:var(--text2);
+}
+.empty-state .empty-icon{font-size:3rem;margin-bottom:12px;opacity:.4}
+.empty-state p{font-size:.9rem;line-height:1.6}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--glass-border);border-radius:3px}
+
+/* Animations */
+@keyframes slideIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes toastIn{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-12px)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
+.post{animation:slideIn .3s ease}
+.like-anim{animation:pulse .3s ease}
+
+/* Responsive */
+@media(max-width:480px){
+html{font-size:14px}
+.post{padding:12px}
+.compose{margin:8px 12px;padding:12px}
+.feed{padding:0 12px}
+.channels{padding:8px 12px}
+.header-actions button{width:32px;height:32px;font-size:.9rem}
+.header-actions{gap:3px}
+.stats-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:360px){
+.compose-type button{padding:4px 8px;font-size:.7rem}
+.btn-post{padding:7px 16px;font-size:.8rem}
+.header h1{font-size:1rem}
+}
+</style>
+</head>
+<body>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="app" id="app">
+  <!-- Header -->
+  <div class="header">
+    <h1><span class="logo">S</span> プロジェクトSNS <span style="font-size:.6rem;opacity:.4;font-weight:400">v2.0</span></h1>
+    <div class="header-actions">
+      <button onclick="toggleSearch()" title="検索">&#128269;</button>
+      <button onclick="exportSnsData()" title="エクスポート">&#128229;</button>
+      <button onclick="importSnsData()" title="インポート">&#128228;</button>
+      <button onclick="togglePanel('rss')" title="RSS">&#128225;</button>
+      <button id="notifBtn" onclick="clearNotifs()" title="通知">
+        &#128276;
+        <span class="notif-badge hidden" id="notifBadge">0</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-bar" id="searchBar">
+    <input type="text" id="searchInput" placeholder="投稿を検索..." oninput="filterPosts()">
+  </div>
+
+  <!-- Channels -->
+  <div class="channels" id="channels"></div>
+
+  <!-- RSS Panel -->
+  <div class="rss-panel" id="rssPanel">
+    <h3>&#128225; RSSフィード</h3>
+    <div class="rss-add">
+      <input type="text" id="rssUrl" placeholder="RSSフィードURL...">
+      <button onclick="addRssFeed()">追加</button>
+    </div>
+    <div class="rss-list" id="rssList"></div>
+  </div>
+
+  <!-- Stats Panel -->
+  <div class="stats-panel" id="statsPanel">
+    <h3>&#128202; アクティビティ統計</h3>
+    <div class="stats-grid" id="statsCards"></div>
+    <div class="stats-bars" id="statsBars"></div>
+    <div class="heatmap-title">投稿ヒートマップ (過去12週間)</div>
+    <div class="heatmap-wrap"><canvas id="heatmap" width="640" height="100"></canvas></div>
+  </div>
+
+  <!-- Digest Panel -->
+  <div class="digest-panel" id="digestPanel">
+    <h3>&#128220; ダイジェスト</h3>
+    <div class="digest-actions">
+      <button class="active" onclick="genDigest('daily')">今日</button>
+      <button onclick="genDigest('weekly')">今週</button>
+      <button onclick="genDigest('all')">全期間</button>
+    </div>
+    <div class="digest-content" id="digestContent" style="margin-top:12px"></div>
+  </div>
+
+  <!-- Git Panel -->
+  <div class="git-panel" id="gitPanel">
+    <h3>&#128736; Gitログから投稿</h3>
+    <textarea id="gitLog" placeholder="git log --oneline -20 の出力をここに貼り付け..."></textarea>
+    <div class="git-actions">
+      <button class="primary" onclick="importGitLog()">投稿として取り込む</button>
+      <button onclick="togglePanel('git')">閉じる</button>
+    </div>
+  </div>
+
+  <!-- Compose -->
+  <div class="compose" id="compose">
+    <div class="compose-top">
+      <div class="compose-avatar">YOU</div>
+      <div class="compose-input">
+        <textarea id="composeText" placeholder="プロジェクトの更新を投稿..." oninput="updateCharCount()"></textarea>
+        <div class="char-count" id="charCount">0 / 500</div>
+        <div class="compose-meta">
+          <select id="composeProject"></select>
+          <input type="text" id="composeTags" placeholder="タグ (#deploy #fix ...)">
+        </div>
+      </div>
+    </div>
+    <div class="compose-actions">
+      <div class="compose-type">
+        <button class="active" data-type="text" onclick="setPostType(this,'text')">&#128172; テキスト</button>
+        <button data-type="milestone" onclick="setPostType(this,'milestone')">&#127942; マイルストーン</button>
+        <button data-type="link" onclick="setPostType(this,'link')">&#128279; リンク</button>
+      </div>
+      <button class="btn-post" onclick="createPost()">投稿</button>
+    </div>
+  </div>
+
+  <!-- Feed -->
+  <div class="feed" id="feed"></div>
+</div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+  <div class="bottom-nav-inner">
+    <button class="nav-btn active" data-view="feed" onclick="switchView(this,'feed')"><span class="nav-icon">&#127968;</span>フィード</button>
+    <button class="nav-btn" data-view="digest" onclick="switchView(this,'digest')"><span class="nav-icon">&#128220;</span>ダイジェスト</button>
+    <button class="nav-btn" data-view="git" onclick="switchView(this,'git')"><span class="nav-icon">&#128736;</span>Git取込</button>
+    <button class="nav-btn" data-view="stats" onclick="switchView(this,'stats')"><span class="nav-icon">&#128202;</span>統計</button>
+  </div>
+</div>
+
+<script>
+// ── Project Definitions ──
+const PROJECTS = {
+  'RAVEN REBORN':  {color:'#e74c3c', short:'RR'},
+  'NEWS PULSE':    {color:'#0984e3', short:'NP'},
+  'PITCH FORGE':   {color:'#6c5ce7', short:'PF'},
+  'PONO':          {color:'#00b894', short:'PN'},
+  'TAG MANAGER':   {color:'#fdcb6e', short:'TM'},
+  'GAME IDEAS':    {color:'#e17055', short:'GI'},
+  'SNS':           {color:'#74b9ff', short:'SN'},
+  'MONOREPO':      {color:'#a29bfe', short:'MR'},
+};
+
+const MAX_CHARS = 500;
+
+// ── State ──
+let state = loadState();
+let currentChannel = 'all';
+let currentPostType = 'text';
+let searchQuery = '';
+let openMenuId = null;
+
+function defaultState() {
+  return {
+    posts: getSamplePosts(),
+    rssFeeds: [],
+    lastVisit: Date.now(),
+    notifCount: 0,
+  };
+}
+
+function loadState() {
+  try {
+    const s = localStorage.getItem('sns_state');
+    if (s) {
+      const parsed = JSON.parse(s);
+      if (parsed.posts && parsed.posts.length > 0) return parsed;
+    }
+  } catch(e) {}
+  return defaultState();
+}
+
+function saveState() {
+  try {
+    localStorage.setItem('sns_state', JSON.stringify(state));
+  } catch(e) {
+    showToast('保存に失敗しました（容量不足の可能性）', 'error');
+  }
+}
+
+function getSamplePosts() {
+  const now = Date.now();
+  const h = 3600000, d = 86400000;
+  return [
+    {id:genId(),project:'RAVEN REBORN',type:'milestone',body:'RAVEN REBORN v1.12 デプロイ完了 - 罠師クラス、シナジーボーナス追加',tags:['#deploy','#v1.12','#newclass'],ts:now-2*h,likes:3,pinned:true,liked:false},
+    {id:genId(),project:'GAME IDEAS',type:'milestone',body:'新作ゲーム2本リリース: 賽の迷宮 + デッキ・ディケイ',tags:['#release','#newgame'],ts:now-5*h,likes:5,pinned:false,liked:false},
+    {id:genId(),project:'MONOREPO',type:'text',body:'全8アプリのクロスアプリ統一性ポリッシュ完了\nダークテーマ、フォント、ナビゲーション全て統一',tags:['#polish','#consistency'],ts:now-8*h,likes:2,pinned:false,liked:false},
+    {id:genId(),project:'PITCH FORGE',type:'milestone',body:'Anime Pitch Studio レビュー・フィードバック機能追加\nスワイプナビ + PWA対応完了',tags:['#review','#pwa','#swipe'],ts:now-1*d,likes:4,pinned:true,liked:false},
+    {id:genId(),project:'PONO',type:'text',body:'全8企画のPONOノート生成完了\nNotionデータインポート待ち',tags:['#pono','#notes'],ts:now-1.5*d,likes:1,pinned:false,liked:false},
+    {id:genId(),project:'NEWS PULSE',type:'link',body:'NEWS PULSE RSSリーダー v2.0\n外部フィード統合 + カテゴリフィルター実装',tags:['#rss','#v2'],ts:now-2*d,likes:3,pinned:false,liked:false,link:'https://example.com/news-pulse'},
+    {id:genId(),project:'TAG MANAGER',type:'text',body:'Notion タグマネージャー公開\nタグ一括編集・カラーコード管理機能',tags:['#notion','#tags'],ts:now-2.5*d,likes:2,pinned:false,liked:false},
+    {id:genId(),project:'RAVEN REBORN',type:'text',body:'4チーム開発ローテーション開始\nバトル班・UI班・データ班・QA班の批評サイクル確立',tags:['#workflow','#rotation'],ts:now-3*d,likes:1,pinned:false,liked:false},
+    {id:genId(),project:'MONOREPO',type:'milestone',body:'モノレポ初回コミット完了\n全プロジェクト統合リポジトリ構築',tags:['#monorepo','#initial'],ts:now-4*d,likes:6,pinned:false,liked:false},
+    {id:genId(),project:'SNS',type:'milestone',body:'プロジェクトSNS開発開始\nタイムライン・ダイジェスト・統計機能設計中',tags:['#sns','#newproject'],ts:now-5*d,likes:2,pinned:false,liked:false},
+  ];
+}
+
+function genId() { return Math.random().toString(36).substr(2,9) + Date.now().toString(36); }
+
+// ── Toast Notification ──
+function showToast(message, type='info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('out');
+    setTimeout(() => toast.remove(), 300);
+  }, 2500);
+}
+
+// ── Rendering ──
+function render() {
+  renderChannels();
+  renderFeed();
+  renderRss();
+  renderNotif();
+}
+
+function renderChannels() {
+  const el = document.getElementById('channels');
+  const counts = {};
+  state.posts.forEach(p => { counts[p.project] = (counts[p.project]||0) + 1; });
+
+  let html = `<button class="ch-btn ${currentChannel==='all'?'active':''}" onclick="setChannel('all')">&#127760; すべて <span style="opacity:.5;font-size:.7rem">${state.posts.length}</span></button>`;
+  for (const [name, cfg] of Object.entries(PROJECTS)) {
+    const c = counts[name] || 0;
+    if (c === 0 && currentChannel !== name) continue; // hide empty channels
+    html += `<button class="ch-btn ${currentChannel===name?'active':''}" onclick="setChannel('${name}')" style="${currentChannel===name?'background:'+cfg.color+';border-color:'+cfg.color:''}">${name} <span style="opacity:.5;font-size:.7rem">${c}</span></button>`;
+  }
+  el.innerHTML = html;
+}
+
+function setChannel(ch) {
+  currentChannel = ch;
+  render();
+}
+
+function renderFeed() {
+  const el = document.getElementById('feed');
+  let posts = [...state.posts];
+
+  // Filter by channel
+  if (currentChannel !== 'all') {
+    posts = posts.filter(p => p.project === currentChannel);
+  }
+
+  // Filter by search
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    posts = posts.filter(p =>
+      p.body.toLowerCase().includes(q) ||
+      p.project.toLowerCase().includes(q) ||
+      (p.tags && p.tags.some(t => t.toLowerCase().includes(q)))
+    );
+  }
+
+  // Sort: pinned first, then by time
+  posts.sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    return b.ts - a.ts;
+  });
+
+  if (posts.length === 0) {
+    el.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">&#128173;</div>
+      <p>${searchQuery ? '検索結果がありません' : '投稿がありません'}<br>
+      <span style="font-size:.8rem;opacity:.6">${searchQuery ? '別のキーワードで検索してみてください' : '上のフォームから最初の投稿をしましょう'}</span></p>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = posts.map(p => renderPost(p)).join('');
+}
+
+function renderPost(p) {
+  const cfg = PROJECTS[p.project] || {color:'#888',short:'??'};
+  const time = formatTime(p.ts);
+  const typeClass = p.type ? 'post-type-' + p.type : '';
+  const pinLabel = p.pinned ? `<div class="pin-label">&#128204; ピン留め</div>` : '';
+
+  let bodyHtml = escapeHtml(p.body).replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+
+  let extra = '';
+  if (p.type === 'link' && p.link) {
+    extra = `<div class="link-card"><a href="${escapeHtml(p.link)}" target="_blank" rel="noopener">${escapeHtml(p.link)}</a></div>`;
+  }
+  if (p.rssSource) {
+    extra += `<div class="rss-source">&#128225; ${escapeHtml(p.rssSource)}</div>`;
+  }
+
+  const tagsHtml = (p.tags||[]).map(t => `<span>${escapeHtml(t)}</span>`).join('');
+
+  return `
+    <div class="post ${p.pinned?'pinned':''} ${typeClass}" id="post-${p.id}">
+      ${pinLabel}
+      <div class="post-header">
+        <div class="post-avatar" style="background:${cfg.color}">${cfg.short}</div>
+        <div class="post-meta">
+          <div class="post-project">${escapeHtml(p.project)} <span class="badge" style="background:${cfg.color}18;color:${cfg.color}">${p.type||'text'}</span></div>
+          <div class="post-time">${time}</div>
+        </div>
+        <div class="post-menu-wrap">
+          <button class="post-menu-btn" onclick="togglePostMenu(event,'${p.id}')" title="メニュー">&#8943;</button>
+          <div class="post-menu" id="menu-${p.id}">
+            <button onclick="startEditPost('${p.id}')">&#9998; 編集</button>
+            <button onclick="togglePin('${p.id}')">&#128204; ${p.pinned?'ピン解除':'ピン留め'}</button>
+            <button onclick="sharePost('${p.id}')">&#128257; 共有</button>
+            <button class="danger" onclick="deletePost('${p.id}')">&#128465; 削除</button>
+          </div>
+        </div>
+      </div>
+      <div class="post-body" id="body-${p.id}">${bodyHtml}</div>
+      ${extra}
+      ${tagsHtml ? `<div class="post-tags">${tagsHtml}</div>` : ''}
+      <div class="post-actions">
+        <button class="${p.liked?'liked':''}" onclick="toggleLike('${p.id}')">
+          ${p.liked?'&#10084;':'&#9825;'} <span>${p.likes||0}</span>
+        </button>
+        <button onclick="sharePost('${p.id}')">&#128257; 共有</button>
+      </div>
+    </div>
+  `;
+}
+
+function formatTime(ts) {
+  const diff = Date.now() - ts;
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'たった今';
+  if (m < 60) return m + '分前';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + '時間前';
+  const d = Math.floor(h / 24);
+  if (d < 7) return d + '日前';
+  return new Date(ts).toLocaleDateString('ja-JP', {year:'numeric', month:'short', day:'numeric'});
+}
+
+function escapeHtml(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Post Menu ──
+function togglePostMenu(event, id) {
+  event.stopPropagation();
+  const menu = document.getElementById('menu-' + id);
+  if (openMenuId && openMenuId !== id) {
+    const prev = document.getElementById('menu-' + openMenuId);
+    if (prev) prev.classList.remove('open');
+  }
+  menu.classList.toggle('open');
+  openMenuId = menu.classList.contains('open') ? id : null;
+}
+
+// Close menus on outside click
+document.addEventListener('click', () => {
+  if (openMenuId) {
+    const menu = document.getElementById('menu-' + openMenuId);
+    if (menu) menu.classList.remove('open');
+    openMenuId = null;
+  }
+});
+
+// ── Actions ──
+function toggleLike(id) {
+  const p = state.posts.find(x => x.id === id);
+  if (!p) return;
+  p.liked = !p.liked;
+  p.likes = (p.likes||0) + (p.liked ? 1 : -1);
+  if (p.likes < 0) p.likes = 0;
+  saveState();
+  const el = document.querySelector(`#post-${id} .post-actions button`);
+  if (el) { el.classList.add('like-anim'); setTimeout(()=>el.classList.remove('like-anim'),300); }
+  renderFeed();
+}
+
+function togglePin(id) {
+  const p = state.posts.find(x => x.id === id);
+  if (!p) return;
+  p.pinned = !p.pinned;
+  saveState();
+  showToast(p.pinned ? 'ピン留めしました' : 'ピン留めを解除しました', 'success');
+  renderFeed();
+}
+
+function deletePost(id) {
+  if (!confirm('この投稿を削除しますか?')) return;
+  state.posts = state.posts.filter(x => x.id !== id);
+  saveState();
+  showToast('投稿を削除しました', 'info');
+  renderFeed();
+  renderChannels();
+}
+
+function startEditPost(id) {
+  const p = state.posts.find(x => x.id === id);
+  if (!p) return;
+  openMenuId = null;
+  const bodyEl = document.getElementById('body-' + id);
+  if (!bodyEl) return;
+  const postEl = bodyEl.closest('.post');
+  const actionsEl = postEl.querySelector('.post-actions');
+  if (actionsEl) actionsEl.style.display = 'none';
+
+  bodyEl.innerHTML = `<div class="post-edit">
+    <textarea id="edit-${id}">${escapeHtml(p.body)}</textarea>
+    <div class="post-edit-actions">
+      <button class="cancel" onclick="cancelEditPost('${id}')">キャンセル</button>
+      <button class="save" onclick="saveEditPost('${id}')">保存</button>
+    </div>
+  </div>`;
+  document.getElementById('edit-' + id).focus();
+}
+
+function saveEditPost(id) {
+  const p = state.posts.find(x => x.id === id);
+  if (!p) return;
+  const text = document.getElementById('edit-' + id).value.trim();
+  if (!text) return;
+  p.body = text;
+  saveState();
+  showToast('投稿を更新しました', 'success');
+  renderFeed();
+}
+
+function cancelEditPost(id) {
+  renderFeed();
+}
+
+function sharePost(id) {
+  const p = state.posts.find(x => x.id === id);
+  if (!p) return;
+  const text = `[${p.project}] ${p.body}`;
+  if (navigator.share) {
+    navigator.share({title:'プロジェクトSNS',text});
+  } else {
+    navigator.clipboard.writeText(text).then(() => showToast('クリップボードにコピーしました', 'success'));
+  }
+}
+
+// ── Compose ──
+function updateCharCount() {
+  const text = document.getElementById('composeText').value;
+  const el = document.getElementById('charCount');
+  const len = text.length;
+  el.textContent = len + ' / ' + MAX_CHARS;
+  el.className = 'char-count' + (len > MAX_CHARS ? ' over' : len > MAX_CHARS * 0.8 ? ' warn' : '');
+}
+
+function setPostType(btn, type) {
+  currentPostType = type;
+  document.querySelectorAll('.compose-type button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function createPost() {
+  const text = document.getElementById('composeText').value.trim();
+  if (!text) { showToast('投稿内容を入力してください', 'error'); return; }
+  if (text.length > MAX_CHARS) { showToast('文字数が上限を超えています', 'error'); return; }
+
+  const project = document.getElementById('composeProject').value;
+  const tagsRaw = document.getElementById('composeTags').value.trim();
+  const tags = tagsRaw ? tagsRaw.split(/\s+/).filter(t => t) : [];
+
+  const post = {
+    id: genId(),
+    project,
+    type: currentPostType,
+    body: text,
+    tags,
+    ts: Date.now(),
+    likes: 0,
+    pinned: false,
+    liked: false,
+  };
+
+  if (currentPostType === 'link') {
+    const urlMatch = text.match(/(https?:\/\/[^\s]+)/);
+    if (urlMatch) post.link = urlMatch[1];
+  }
+
+  state.posts.unshift(post);
+  if (state.posts.length > 500) state.posts = state.posts.slice(0, 500);
+  state.notifCount++;
+  saveState();
+
+  document.getElementById('composeText').value = '';
+  document.getElementById('composeTags').value = '';
+  updateCharCount();
+  showToast('投稿しました', 'success');
+  render();
+}
+
+function populateProjectSelect() {
+  const sel = document.getElementById('composeProject');
+  sel.innerHTML = Object.keys(PROJECTS).map(name =>
+    `<option value="${name}">${name}</option>`
+  ).join('');
+}
+
+// ── Search ──
+function toggleSearch() {
+  const bar = document.getElementById('searchBar');
+  bar.classList.toggle('open');
+  if (bar.classList.contains('open')) {
+    document.getElementById('searchInput').focus();
+  } else {
+    document.getElementById('searchInput').value = '';
+    searchQuery = '';
+    renderFeed();
+  }
+}
+
+function filterPosts() {
+  searchQuery = document.getElementById('searchInput').value;
+  renderFeed();
+}
+
+// ── Panels ──
+function togglePanel(name) {
+  const panels = ['stats','rss','digest','git'];
+  panels.forEach(pn => {
+    const el = document.getElementById(pn + 'Panel');
+    if (el) {
+      if (pn === name) el.classList.toggle('open');
+      else el.classList.remove('open');
+    }
+  });
+  if (name === 'stats' && document.getElementById('statsPanel').classList.contains('open')) {
+    renderStats();
+  }
+}
+
+// ── Bottom Nav ──
+function switchView(btn, view) {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  ['statsPanel','digestPanel','gitPanel','rssPanel'].forEach(id => {
+    document.getElementById(id).classList.remove('open');
+  });
+
+  const compose = document.getElementById('compose');
+  const feed = document.getElementById('feed');
+
+  if (view === 'feed') {
+    compose.style.display = '';
+    feed.style.display = '';
+  } else if (view === 'digest') {
+    compose.style.display = 'none';
+    feed.style.display = 'none';
+    document.getElementById('digestPanel').classList.add('open');
+    genDigest('daily');
+  } else if (view === 'git') {
+    compose.style.display = 'none';
+    feed.style.display = 'none';
+    document.getElementById('gitPanel').classList.add('open');
+  } else if (view === 'stats') {
+    compose.style.display = 'none';
+    feed.style.display = 'none';
+    document.getElementById('statsPanel').classList.add('open');
+    renderStats();
+  }
+}
+
+// ── Git Import ──
+function importGitLog() {
+  const raw = document.getElementById('gitLog').value.trim();
+  if (!raw) return;
+  const lines = raw.split('\n').filter(l => l.trim());
+  let count = 0;
+
+  lines.forEach((line, idx) => {
+    const cleaned = line.replace(/^[a-f0-9]{7,}\s+/, '').trim();
+    if (!cleaned) return;
+
+    let project = 'MONOREPO';
+    const lower = cleaned.toLowerCase();
+    if (lower.includes('raven') || lower.includes('game')) project = 'RAVEN REBORN';
+    else if (lower.includes('news') || lower.includes('pulse')) project = 'NEWS PULSE';
+    else if (lower.includes('pitch') || lower.includes('anime')) project = 'PITCH FORGE';
+    else if (lower.includes('pono')) project = 'PONO';
+    else if (lower.includes('tag')) project = 'TAG MANAGER';
+    else if (lower.includes('sns')) project = 'SNS';
+
+    state.posts.push({
+      id: genId(),
+      project,
+      type: 'text',
+      body: cleaned,
+      tags: ['#git','#commit'],
+      ts: Date.now() - (lines.length - idx) * 600000,
+      likes: 0,
+      pinned: false,
+      liked: false,
+    });
+    count++;
+  });
+
+  if (count > 0) {
+    state.notifCount += count;
+    saveState();
+    document.getElementById('gitLog').value = '';
+    showToast(count + '件のコミットを取り込みました', 'success');
+    const feedBtn = document.querySelector('.nav-btn[data-view="feed"]');
+    if (feedBtn) switchView(feedBtn, 'feed');
+    render();
+  }
+}
+
+// ── RSS ──
+function addRssFeed() {
+  const url = document.getElementById('rssUrl').value.trim();
+  if (!url) return;
+  if (!state.rssFeeds) state.rssFeeds = [];
+  if (state.rssFeeds.includes(url)) { showToast('既に登録済みです', 'error'); return; }
+  state.rssFeeds.push(url);
+  saveState();
+  document.getElementById('rssUrl').value = '';
+  showToast('RSSフィードを追加しました', 'success');
+  renderRss();
+  fetchRss(url);
+}
+
+function removeRssFeedByIndex(idx) {
+  if (!state.rssFeeds) return;
+  state.rssFeeds.splice(idx, 1);
+  saveState();
+  showToast('フィードを削除しました', 'info');
+  renderRss();
+}
+
+function renderRss() {
+  const el = document.getElementById('rssList');
+  const feeds = state.rssFeeds || [];
+  if (feeds.length === 0) {
+    el.innerHTML = '<div style="color:var(--text2);font-size:.85rem;padding:8px 0">登録済みフィードなし</div>';
+    return;
+  }
+  el.innerHTML = feeds.map((url,i) => `
+    <div class="rss-item">
+      <span>${escapeHtml(url)}</span>
+      <button onclick="removeRssFeedByIndex(${i})">&#10005; 削除</button>
+    </div>
+  `).join('');
+}
+
+async function fetchRss(url) {
+  try {
+    const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+    const resp = await fetch(proxyUrl);
+    const text = await resp.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, 'text/xml');
+    const items = doc.querySelectorAll('item');
+    let count = 0;
+
+    items.forEach((item, i) => {
+      if (i >= 5) return;
+      const title = item.querySelector('title')?.textContent || '';
+      const link = item.querySelector('link')?.textContent || '';
+      const desc = item.querySelector('description')?.textContent || '';
+      const pubDate = item.querySelector('pubDate')?.textContent;
+      const ts = pubDate ? new Date(pubDate).getTime() : Date.now() - i * 3600000;
+
+      if (state.posts.some(p => p.body === title && p.rssSource)) return;
+
+      state.posts.push({
+        id: genId(),
+        project: 'NEWS PULSE',
+        type: 'link',
+        body: title + (desc ? '\n' + desc.replace(/<[^>]*>/g,'').substring(0,150) : ''),
+        link,
+        tags: ['#rss'],
+        ts,
+        likes: 0,
+        pinned: false,
+        liked: false,
+        rssSource: url,
+      });
+      count++;
+    });
+
+    if (count > 0) {
+      state.notifCount += count;
+      saveState();
+      render();
+    }
+  } catch(e) {
+    console.warn('RSS fetch failed:', e);
+  }
+}
+
+function refreshAllRss() {
+  (state.rssFeeds||[]).forEach(url => fetchRss(url));
+}
+
+// ── Stats ──
+function renderStats() {
+  renderStatsCards();
+  renderStatsBars();
+  renderHeatmap();
+}
+
+function renderStatsCards() {
+  const el = document.getElementById('statsCards');
+  const totalPosts = state.posts.length;
+  const totalLikes = state.posts.reduce((s, p) => s + (p.likes||0), 0);
+  const milestones = state.posts.filter(p => p.type === 'milestone').length;
+  const projects = new Set(state.posts.map(p => p.project)).size;
+  const todayPosts = state.posts.filter(p => {
+    const d = new Date(p.ts);
+    const now = new Date();
+    return d.toDateString() === now.toDateString();
+  }).length;
+  const weekPosts = state.posts.filter(p => p.ts > Date.now() - 7*86400000).length;
+
+  el.innerHTML = `
+    <div class="stat-card"><div class="stat-num">${totalPosts}</div><div class="stat-lbl">総投稿数</div></div>
+    <div class="stat-card"><div class="stat-num">${totalLikes}</div><div class="stat-lbl">総いいね</div></div>
+    <div class="stat-card"><div class="stat-num">${milestones}</div><div class="stat-lbl">マイルストーン</div></div>
+    <div class="stat-card"><div class="stat-num">${projects}</div><div class="stat-lbl">プロジェクト数</div></div>
+    <div class="stat-card"><div class="stat-num">${todayPosts}</div><div class="stat-lbl">今日の投稿</div></div>
+    <div class="stat-card"><div class="stat-num">${weekPosts}</div><div class="stat-lbl">今週の投稿</div></div>
+  `;
+}
+
+function renderStatsBars() {
+  const el = document.getElementById('statsBars');
+  const counts = {};
+  state.posts.forEach(p => {
+    counts[p.project] = (counts[p.project]||0) + 1;
+  });
+  const max = Math.max(...Object.values(counts), 1);
+
+  el.innerHTML = Object.entries(counts)
+    .sort((a,b) => b[1] - a[1])
+    .map(([name, count]) => {
+      const cfg = PROJECTS[name] || {color:'#888'};
+      const pct = (count / max * 100).toFixed(0);
+      return `
+        <div class="stat-row">
+          <div class="stat-label">${escapeHtml(name)}</div>
+          <div class="stat-bar"><div class="stat-bar-fill" style="width:${pct}%;background:${cfg.color}"></div></div>
+          <div class="stat-count">${count}</div>
+        </div>
+      `;
+    }).join('');
+}
+
+function renderHeatmap() {
+  const canvas = document.getElementById('heatmap');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  const weeks = 12;
+  const cellSize = 10;
+  const gap = 3;
+  const offsetX = 40;
+  const offsetY = 16;
+  const days = ['月','','水','','金','','日'];
+
+  ctx.fillStyle = '#7878a0';
+  ctx.font = '9px sans-serif';
+  days.forEach((d, i) => {
+    if (d) ctx.fillText(d, 4, offsetY + i * (cellSize + gap) + cellSize - 1);
+  });
+
+  const dayCounts = {};
+  const now = new Date();
+  state.posts.forEach(p => {
+    const d = new Date(p.ts);
+    const key = d.toISOString().split('T')[0];
+    dayCounts[key] = (dayCounts[key]||0) + 1;
+  });
+
+  const maxCount = Math.max(...Object.values(dayCounts), 1);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dayOfWeek = (today.getDay() + 6) % 7;
+  const startDate = new Date(today);
+  startDate.setDate(startDate.getDate() - (weeks * 7) - dayOfWeek);
+
+  for (let week = 0; week < weeks + 1; week++) {
+    for (let day = 0; day < 7; day++) {
+      const d = new Date(startDate);
+      d.setDate(d.getDate() + week * 7 + day);
+      if (d > today) continue;
+
+      const key = d.toISOString().split('T')[0];
+      const count = dayCounts[key] || 0;
+
+      if (count === 0) {
+        ctx.fillStyle = 'rgba(24,24,52,.6)';
+      } else {
+        const intensity = Math.min(count / maxCount, 1);
+        const a = 0.3 + intensity * 0.7;
+        ctx.fillStyle = `rgba(9,${Math.round(132 * intensity)},227,${a})`;
+      }
+
+      const x = offsetX + week * (cellSize + gap);
+      const y = offsetY + day * (cellSize + gap);
+
+      if (ctx.roundRect) {
+        ctx.beginPath();
+        ctx.roundRect(x, y, cellSize, cellSize, 2);
+        ctx.fill();
+      } else {
+        // Fallback
+        ctx.fillRect(x, y, cellSize, cellSize);
+      }
+    }
+  }
+}
+
+// ── Digest ──
+function genDigest(period) {
+  document.querySelectorAll('.digest-actions button').forEach(b => b.classList.remove('active'));
+  const activeBtn = document.querySelector(`.digest-actions button[onclick="genDigest('${period}')"]`);
+  if(activeBtn) activeBtn.classList.add('active');
+
+  const now = Date.now();
+  let cutoff, periodLabel;
+  if (period === 'daily') { cutoff = now - 86400000; periodLabel = '今日'; }
+  else if (period === 'weekly') { cutoff = now - 7*86400000; periodLabel = '今週'; }
+  else { cutoff = 0; periodLabel = '全期間'; }
+
+  const filtered = state.posts.filter(p => p.ts >= cutoff);
+  const el = document.getElementById('digestContent');
+
+  if (filtered.length === 0) {
+    el.innerHTML = `<p>${periodLabel}の投稿はありません。</p>`;
+    return;
+  }
+
+  const groups = {};
+  filtered.forEach(p => {
+    if (!groups[p.project]) groups[p.project] = [];
+    groups[p.project].push(p);
+  });
+
+  let html = `<p><strong>&#128220; ${periodLabel}のダイジェスト</strong> (${filtered.length}件の投稿)</p><br>`;
+
+  for (const [project, posts] of Object.entries(groups)) {
+    const cfg = PROJECTS[project] || {color:'#888'};
+    html += `<p><strong style="color:${cfg.color}">${escapeHtml(project)}</strong> (${posts.length}件)</p>`;
+    html += '<ul style="margin:4px 0 12px 18px">';
+    posts.slice(0, 5).forEach(p => {
+      const firstLine = p.body.split('\n')[0].substring(0, 80);
+      html += `<li style="margin-bottom:4px">${escapeHtml(firstLine)}</li>`;
+    });
+    if (posts.length > 5) html += `<li>...他 ${posts.length-5}件</li>`;
+    html += '</ul>';
+  }
+
+  const milestones = filtered.filter(p => p.type === 'milestone').length;
+  const totalLikes = filtered.reduce((s, p) => s + (p.likes||0), 0);
+  html += `<br><p><strong>&#128200; サマリー:</strong> マイルストーン ${milestones}件 / いいね合計 ${totalLikes} / プロジェクト ${Object.keys(groups).length}件</p>`;
+
+  el.innerHTML = html;
+}
+
+// ── Notifications ──
+function renderNotif() {
+  const badge = document.getElementById('notifBadge');
+  if (state.notifCount > 0) {
+    badge.textContent = state.notifCount > 99 ? '99+' : state.notifCount;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
+function clearNotifs() {
+  state.notifCount = 0;
+  state.lastVisit = Date.now();
+  saveState();
+  renderNotif();
+  showToast('通知をクリアしました', 'info');
+}
+
+function checkNewPosts() {
+  const newCount = state.posts.filter(p => p.ts > state.lastVisit).length;
+  if (newCount > 0 && state.notifCount === 0) {
+    state.notifCount = newCount;
+    saveState();
+    renderNotif();
+  }
+}
+
+// ── Data Export/Import ──
+function exportSnsData() {
+  const json = JSON.stringify(state, null, 2);
+  const blob = new Blob([json], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'sns_data_' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('データをエクスポートしました', 'success');
+}
+
+function importSnsData() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = function() {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (imported.posts) {
+          if (!confirm('現在のデータを上書きしますか？')) return;
+          state = imported;
+          saveState();
+          render();
+          showToast('インポート完了 (' + state.posts.length + '件)', 'success');
+        } else {
+          showToast('無効なデータ形式です', 'error');
+        }
+      } catch(err) {
+        showToast('JSONの解析に失敗しました', 'error');
+      }
+    };
+    reader.readAsText(input.files[0]);
+  };
+  input.click();
+}
+
+// ── Keyboard Shortcuts ──
+document.addEventListener('keydown', function(e) {
+  // Ctrl+K or Cmd+K -> toggle search
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    toggleSearch();
+  }
+  // Escape -> close search / menus
+  if (e.key === 'Escape') {
+    const bar = document.getElementById('searchBar');
+    if (bar.classList.contains('open')) {
+      toggleSearch();
+    }
+    if (openMenuId) {
+      const menu = document.getElementById('menu-' + openMenuId);
+      if (menu) menu.classList.remove('open');
+      openMenuId = null;
+    }
+  }
+});
+
+// ── Init ──
+function init() {
+  populateProjectSelect();
+  render();
+  checkNewPosts();
+  setInterval(refreshAllRss, 300000);
+}
+
+init();
+</script>
+</body>
+</html>
